@@ -1,0 +1,9 @@
+.DS_Store
+*.swo
+*.swp
+bin
+.build*
+*.xmt
+.project
+.cproject
+.settings
