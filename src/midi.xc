@@ -17,47 +17,48 @@ void midi_receive(in port p_MIDI_IN, client interface i_midi_listener listener) 
     message.length = -1;
 
     t :> time;
-
+    time += MIDI_BITTIME;
     while(1) {
         select {
             case !is_receiving => p_MIDI_IN when pinsneq(1) :> void:
+                t :> time;
+                time += MIDI_BITTIME*3/2;
                 is_receiving = 1;
-                time += MIDI_BITTIME/2;
                 break;
             case is_receiving => t when timerafter(time) :> void:
-                if(bits_count < 8)
+                time += MIDI_BITTIME;
+                if(bits_count++ < 8) {
                     p_MIDI_IN :> >> byte;
+                }
                 else {
                     p_MIDI_IN :> void;
-                    _midi_parse(message, byte >> 24);
-                    if(message.state == message.length)
+                    _midi_parse(listener, message, byte >> 24);
+                    if(message.state == message.length) {
                         listener.command(message);
+                        message.state = 0;
+                    }
                     bits_count = 0;
-                    byte = 0;
                     is_receiving = 0;
                 }
-                time += MIDI_BITTIME;
                 break;
         }
     }
 }
 
-void _midi_parse(struct s_midi_message &message, unsigned byte) {
-    // Command byte
+void _midi_parse(client interface i_midi_listener listener, struct s_midi_message &message, unsigned byte) {
+//    printf("0x%X ", byte);
     if(byte >> 7 == 1) {
-        switch(byte >> 4) {
-        case NOTE_ON:
-            message.length = 2;
-            message.channel = (byte << 28) >> 28;
+        // Active sense
+        if(byte == 0xfe) {
             message.state = 0;
-            message.command = NOTE_ON;
-            break;
-        case NOTE_OFF:
-            message.length = 2;
+            message.length = -1;
+        }
+        else {
+            int command = byte >> 4;
+            message.length = midi_data_bytes(command);
+            message.channel =  (byte << 28) >> 28;
+            message.command = command;
             message.state = 0;
-            message.command = NOTE_OFF;
-            printf("NOTE OFF\n");
-            break;
         }
     }
     // Data byte

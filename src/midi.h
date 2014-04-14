@@ -12,9 +12,10 @@
 #include <xs1.h>
 
 #include "midi_commands.h"
+#include "notes_frequencies.h"
 
 #define MIDI_RATE               (31250)
-#define MIDI_BITTIME            (XS1_TIMER_MHZ * 1000000 / MIDI_RATE)
+#define MIDI_BITTIME            (XS1_TIMER_HZ / MIDI_RATE)
 #define MIDI_BITTIME_2          (MIDI_BITTIME>>1)
 
 /**
@@ -27,9 +28,10 @@
  */
 struct s_midi_message {
     unsigned command;
-    unsigned short length, channel;
+    unsigned short channel;
+    int length;
     unsigned data[2];
-    unsigned state;
+    int state;
 };
 
 /**
@@ -54,6 +56,6 @@ void midi_receive(in port p_MIDI_IN, client interface i_midi_listener listener);
  * \param message           reference to message structure instance to be changed
  * \param byte              byte to be parsed
  */
-void _midi_parse(struct s_midi_message &message, unsigned byte);
+void _midi_parse(client interface i_midi_listener listener, struct s_midi_message &message, unsigned byte);
 
 #endif /* MIDI_H_ */
